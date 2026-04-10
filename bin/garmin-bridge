@@ -13,10 +13,12 @@ from src.config import config
 @click.group()
 @click.option("--debug", is_flag=True, help="Enable debug logging")
 def main(debug):
-    """garmin-bridge — Push notifications, alarms, and calendar to Garmin via BLE."""
+    """garmin-bridge — Push weather, calendar, and notifications to Garmin via BLE."""
     if debug:
         import logging
-        logging.getLogger("garmin-bridge").setLevel(logging.DEBUG)
+        for handler in logging.getLogger("garmin-bridge").handlers:
+            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+                handler.setLevel(logging.DEBUG)
 
 
 @main.command()
@@ -32,6 +34,45 @@ def scan():
     asyncio.run(run())
 
 
+@main.command()
+def daemon():
+    """Connect to watch and stay connected — handle all requests."""
+    from src.daemon import setup
+
+    address = _require_address()
+    if not address:
+        return
+
+    async def run():
+        if not await _check_bond(address):
+            print(f"Device {address} is not paired. Run: garmin-bridge scan")
+            return
+
+        while True:
+            try:
+                print(f"Connecting to {address}...")
+                async with BleakClient(address, timeout=15) as client:
+                    print(f"Connected: {client.is_connected}")
+                    await setup(client)
+                    print("Daemon running. Ctrl+C to stop.")
+                    while True:
+                        await asyncio.sleep(1)
+
+            except KeyboardInterrupt:
+                print("\nShutting down.")
+                return
+
+            except Exception as error:
+                print(f"Disconnected: {error}")
+                print("Reconnecting in 5 seconds...")
+                await asyncio.sleep(5)
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
 @main.group("test")
 def test_cmd():
     """Test commands for debugging."""
@@ -39,15 +80,14 @@ def test_cmd():
 
 @test_cmd.command("services")
 def test_services():
-    """Connect to paired device and dump services."""
-    address = config.get("watch.address")
+    """Connect to paired device and dump GATT services."""
+    address = _require_address()
     if not address:
-        print("No device paired. Run: garmin-bridge scan")
         return
 
     async def run():
         print(f"Connecting to {address}...")
-        async with BleakClient(address) as client:
+        async with BleakClient(address, timeout=15) as client:
             print(f"Connected: {client.is_connected}")
             print(f"Name: {client.name}")
             print()
@@ -60,55 +100,59 @@ def test_services():
                         try:
                             value = await client.read_gatt_char(char)
                             print(f"    -> {value}")
-                        except Exception as e:
-                            print(f"    -> {e}")
+                        except Exception as error:
+                            print(f"    -> {error}")
         print("\nDisconnected.")
 
     asyncio.run(run())
 
 
-@test_cmd.command("weather")
-@click.option("--timeout", default=60, help="Seconds to wait for weather request")
-def test_weather(timeout):
-    """Connect, start protocol, wait for weather request, respond, disconnect."""
-    from src.protocol import Protocol, MessageType
-    from src import weather, calendar
-    from src.protocol import handshake
+@test_cmd.command("connect")
+@click.option("--timeout", default=60, help="Seconds to wait")
+def test_connect(timeout):
+    """Connect, handle all requests for a limited time, then disconnect."""
+    from src.daemon import setup
 
-    address = config.get("watch.address")
+    address = _require_address()
     if not address:
-        print("No device paired. Run: garmin-bridge scan")
         return
 
     async def run():
         print(f"Connecting to {address}...")
-        async with BleakClient(address) as client:
+        async with BleakClient(address, timeout=15) as client:
             print(f"Connected: {client.is_connected}")
-
-            protocol = Protocol(client)
-
-            protocol.on(
-                MessageType.WEATHER_REQUEST,
-                lambda msg_type, payload: weather.handle_request(protocol, msg_type, payload),
-            )
-
-            def handle_protobuf(msg_type, payload):
-                if not calendar.handle_request(protocol, msg_type, payload):
-                    asyncio.ensure_future(
-                        protocol._transport.send(handshake.handle_protobuf_request(payload))
-                    )
-
-            protocol.on(MessageType.PROTOBUF_REQUEST, handle_protobuf)
-
-            print("Starting protocol handshake...")
-            await protocol.start()
-
+            await setup(client)
             print(f"Waiting for requests ({timeout}s timeout)...")
             await asyncio.sleep(timeout)
-
         print("Disconnected.")
 
     asyncio.run(run())
+
+
+def _require_address():
+    address = config.get("watch.address")
+    if not address:
+        print("No device paired. Run: garmin-bridge scan")
+        return None
+    return address
+
+
+async def _check_bond(address):
+    """Check if device is bonded in BlueZ. Returns True if bonded."""
+    try:
+        from dbus_fast.aio import MessageBus
+        from dbus_fast.constants import BusType
+
+        bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+        path = "/org/bluez/hci0/dev_" + address.replace(":", "_")
+        introspection = await bus.introspect("org.bluez", path)
+        proxy = bus.get_proxy_object("org.bluez", path, introspection)
+        properties = proxy.get_interface("org.freedesktop.DBus.Properties")
+        paired = await properties.call_get("org.bluez.Device1", "Paired")
+        bus.disconnect()
+        return paired.value
+    except Exception:
+        return False
 
 
 if __name__ == "__main__":

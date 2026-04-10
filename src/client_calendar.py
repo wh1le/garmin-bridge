@@ -39,7 +39,9 @@ class CalendarClient:
 
     def _fetch_one(self, url, start, end):
         """Fetch events from a single ICS URL."""
-        log.info("Fetching calendar from %s", url)
+        # Mask secret tokens in URL for logging
+        masked_url = url.split("?")[0] if "private" in url else url
+        log.info("Fetching calendar from %s", masked_url)
 
         with urllib.request.urlopen(url, timeout=15) as response:
             raw = response.read()

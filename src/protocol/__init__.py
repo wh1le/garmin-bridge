@@ -77,7 +77,8 @@ class Protocol:
             status = payload[2]
             original_name = _message_name(original_type)
             status_name = Status(status).name if status < len(Status) else str(status)
-            log.debug("RESPONSE to %s: %s", original_name, status_name)
+            extra = payload[3:].hex() if len(payload) > 3 else ""
+            log.debug("RESPONSE to %s: %s %s", original_name, status_name, extra)
 
     def _dispatch(self, raw):
         result = parse(raw)

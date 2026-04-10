@@ -74,7 +74,13 @@ class Transport:
         if not self._char_send or not self._char_recv:
             raise RuntimeError("No V2 multi-link characteristics found")
 
-        # Get negotiated MTU for write chunking
+        # Request higher MTU for better throughput (Garmin watches support 515)
+        try:
+            if hasattr(self.client, "_acquire_mtu"):
+                await self.client._acquire_mtu()
+        except Exception:
+            pass
+
         mtu = getattr(self.client, "mtu_size", 23)
         self._max_write_size = max(mtu - 3, 20)
         log.info("MTU=%d, max write=%d", mtu, self._max_write_size)
