@@ -1,0 +1,7 @@
+result
+.direnv
+pdoc/
+__pycache__/
+*.egg-info/
+dist/
+config.toml

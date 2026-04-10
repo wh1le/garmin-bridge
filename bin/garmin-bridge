@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+import asyncio
+
+import click
+
+from bleak import BleakClient
+
+from src.bluetooth import Bluetooth
+from src.config import config
+
+
+@click.group()
+def main():
+    """garmin-bridge — Push notifications, alarms, and calendar to Garmin via BLE."""
+
+
+@main.command()
+def scan():
+    """Scan, pair, and save a Garmin device."""
+    async def run():
+        bt = Bluetooth()
+        device = await bt.scan()
+        if device:
+            await bt.pair(device.address)
+            await bt.disconnect()
+
+    asyncio.run(run())
+
+
+@main.command()
+def test():
+    """Connect to paired device and dump services."""
+    address = config.get("watch.address")
+    if not address:
+        print("No device paired. Run: garmin-bridge scan")
+        return
+
+    async def run():
+        print(f"Connecting to {address}...")
+        async with BleakClient(address) as client:
+            print(f"Connected: {client.is_connected}")
+            print(f"Name: {client.name}")
+            print()
+            for service in client.services:
+                print(f"[{service.uuid}] {service.description}")
+                for char in service.characteristics:
+                    props = ", ".join(char.properties)
+                    print(f"  {char.uuid} [{props}]")
+                    if "read" in char.properties:
+                        try:
+                            value = await client.read_gatt_char(char)
+                            print(f"    -> {value}")
+                        except Exception as e:
+                            print(f"    -> {e}")
+        print("\nDisconnected.")
+
+    asyncio.run(run())
+
+
+if __name__ == "__main__":
+    main()
