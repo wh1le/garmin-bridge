@@ -2,7 +2,7 @@
 
 Push notifications, alarms, and calendar events from Linux to a Garmin watch via BLE — no smartphone required.
 
-Built for Garmin Fenix 6 on NixOS/Linux. Protocol ported from [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge).
+Built for Garmin Fenix 6 PRO on Linux.
 
 ## Status
 
@@ -50,6 +50,10 @@ garmin-bridge alarm set 07:00 --label "Wake up"
 garmin-bridge alarm list
 garmin-bridge calendar sync --source ~/calendar.ics
 ```
+
+## Acknowledgments
+
+This project would not be possible without [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge) — an open-source Android app that replaces proprietary companion apps for smartwatches and fitness trackers. The entire Garmin BLE/GFDI protocol used here was reverse-engineered by the Gadgetbridge community. Their work on Garmin device support (Fenix 6 added in v0.88.0) is the foundation this project builds on.
 
 ## License
 
