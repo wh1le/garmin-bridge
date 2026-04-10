@@ -1,0 +1,169 @@
+import asyncio
+
+import click
+
+from bleak import BleakClient
+
+from src.bluetooth import Bluetooth
+from src.config import config
+
+
+@click.group()
+@click.option("--debug", is_flag=True, help="Enable debug logging")
+def main(debug):
+    """garmin-bridge — Push weather, calendar, and notifications to Garmin via BLE."""
+    if debug:
+        import logging
+        for handler in logging.getLogger("garmin-bridge").handlers:
+            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+                handler.setLevel(logging.DEBUG)
+
+
+@main.command()
+def scan():
+    """Scan, pair, and save a Garmin device."""
+    async def run():
+        bt = Bluetooth()
+        device = await bt.scan()
+        if device:
+            await bt.pair(device.address)
+            await bt.disconnect()
+
+    asyncio.run(run())
+
+
+@main.command()
+def daemon():
+    """Connect to watch and stay connected — handle all requests."""
+    from src.daemon import setup
+
+    address = _require_address()
+    if not address:
+        return
+
+    async def run():
+        if not await _check_bond(address):
+            print(f"Device {address} is not paired. Run: garmin-bridge scan")
+            return
+
+        while True:
+            try:
+                print(f"Connecting to {address}...")
+                async with BleakClient(address, timeout=15) as client:
+                    print(f"Connected: {client.is_connected}")
+                    protocol = await setup(client)
+                    print("Daemon running. Ctrl+C to stop.")
+                    try:
+                        while True:
+                            await asyncio.sleep(1)
+                    finally:
+                        protocol.stop()
+
+            except KeyboardInterrupt:
+                print("\nShutting down.")
+                return
+
+            except Exception as error:
+                print(f"Disconnected: {error}")
+                print("Reconnecting in 5 seconds...")
+                await asyncio.sleep(5)
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
+@main.group("test")
+def test_cmd():
+    """Test commands for debugging."""
+
+
+@test_cmd.command("services")
+def test_services():
+    """Connect to paired device and dump GATT services."""
+    address = _require_address()
+    if not address:
+        return
+
+    async def run():
+        print(f"Connecting to {address}...")
+        async with BleakClient(address, timeout=15) as client:
+            print(f"Connected: {client.is_connected}")
+            print(f"Name: {client.name}")
+            print()
+            for service in client.services:
+                print(f"[{service.uuid}] {service.description}")
+                for char in service.characteristics:
+                    props = ", ".join(char.properties)
+                    print(f"  {char.uuid} [{props}]")
+                    if "read" in char.properties:
+                        try:
+                            value = await client.read_gatt_char(char)
+                            print(f"    -> {value}")
+                        except Exception as error:
+                            print(f"    -> {error}")
+        print("\nDisconnected.")
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
+@test_cmd.command("connect")
+@click.option("--timeout", default=60, help="Seconds to wait")
+def test_connect(timeout):
+    """Connect, handle all requests for a limited time, then disconnect."""
+    from src.daemon import setup
+
+    address = _require_address()
+    if not address:
+        return
+
+    async def run():
+        print(f"Connecting to {address}...")
+        async with BleakClient(address, timeout=15) as client:
+            print(f"Connected: {client.is_connected}")
+            protocol = await setup(client)
+            print(f"Waiting for requests ({timeout}s timeout)...")
+            try:
+                await asyncio.sleep(timeout)
+            except asyncio.CancelledError:
+                pass
+            finally:
+                protocol.stop()
+        print("Disconnected.")
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
+def _require_address():
+    address = config.get("watch.address")
+    if not address:
+        print("No device paired. Run: garmin-bridge scan")
+        return None
+    return address
+
+
+async def _check_bond(address):
+    """Check if device is bonded in BlueZ. Returns True if bonded."""
+    try:
+        from dbus_fast.aio import MessageBus
+        from dbus_fast.constants import BusType
+
+        bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+        path = "/org/bluez/hci0/dev_" + address.replace(":", "_")
+        introspection = await bus.introspect("org.bluez", path)
+        proxy = bus.get_proxy_object("org.bluez", path, introspection)
+        properties = proxy.get_interface("org.freedesktop.DBus.Properties")
+        paired = await properties.call_get("org.bluez.Device1", "Paired")
+        bus.disconnect()
+        return paired.value
+    except Exception:
+        return False
+
+

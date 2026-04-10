@@ -16,6 +16,9 @@ rich = "^14.3.3"
 readchar = "^4.2.2"
 dbus-fast = "^4.0.4"
 
+[tool.poetry.scripts]
+garmin-bridge = "src.cli:main"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

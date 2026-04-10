@@ -28,11 +28,14 @@ Fenix 5+/6/7 series, Forerunner 245/745/945/955, Venu/Venu 2, Instinct 2, Enduro
 ## Setup
 
 ```bash
+# With pipx (recommended)
+pipx install git+https://github.com/wh1le/garmin-bridge.git
+
 # With Nix
 nix develop
 make install
 
-# Without Nix
+# From source
 poetry install
 ```
 
