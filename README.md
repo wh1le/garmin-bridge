@@ -1,18 +1,28 @@
 # garmin-bridge
 
-Push notifications, alarms, and calendar events from Linux to a Garmin watch via BLE — no smartphone required.
+Replace Garmin Connect Mobile on Linux — push weather, alarms, and calendar events to a Garmin watch via BLE. No smartphone required.
 
-Built for Garmin Fenix 6 PRO on Linux.
+Tested on Garmin Fenix 6 Pro. Should work on any Garmin watch using the V2 GFDI protocol (not tested):
+Fenix 5+/6/7 series, Forerunner 245/745/945/955, Venu/Venu 2, Instinct 2, Enduro.
 
 ## Status
 
-**Phase 1: Connect & Discover** — BLE scanning and GATT service enumeration working. Notification protocol not yet implemented.
+**Weather working.** Connects to watch, completes GFDI handshake, responds to weather requests with live data from OpenWeatherMap.
+
+- [x] BLE scanning, pairing, connect/disconnect
+- [x] GFDI protocol stack (COBS encoding, CRC, message framing, V2 transport)
+- [x] Connection handshake (device info, configuration, time sync)
+- [x] Weather — current, hourly (12h), daily (5 day)
+- [ ] Alarms
+- [ ] Calendar events
+- [ ] Daemon mode (long-running connection)
 
 ## Requirements
 
 - Linux with BlueZ
 - Python 3.11+
 - Nix (optional, for dev shell)
+- OpenWeatherMap API key (free tier, 2.5 API)
 
 ## Setup
 
@@ -25,35 +35,41 @@ make install
 poetry install
 ```
 
+Add your OpenWeatherMap API key to `config.yaml`:
+
+```yaml
+integrations:
+  openweather_api_key: your-key-here
+```
+
 ## Usage
 
 ```bash
-# Scan for Garmin devices and dump BLE services
-make discover
+# Scan and pair a Garmin device
+bin/garmin-bridge scan
 
-# Or directly
-garmin-bridge discover
-garmin-bridge discover --timeout 15
+# Test weather sync (connect, handshake, wait for watch to request weather)
+bin/garmin-bridge test weather
+
+# With debug logging
+bin/garmin-bridge --debug test weather --timeout 60
+
+# Dump BLE services
+bin/garmin-bridge test services
 ```
 
-Put your watch in pairing mode first: **Settings → Sensors & Accessories → Phone → Pair Phone**
+Put your watch in pairing mode first (only needed once):
+**Settings → Sensors & Accessories → Phone → Pair Phone**
 
-## Planned Commands
-
-1. Calendar events — push events, watch shows/alerts
-2. Weather — respond when watch asks
-3. Waypoints — upload locations for navigation
+## Tests
 
 ```bash
-
-garmin-bridge alarm set 07:00 --label "Wake up"
-garmin-bridge alarm list
-garmin-bridge calendar sync --source ~/calendar.ics
+make test
 ```
 
 ## Acknowledgments
 
-This project would not be possible without [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge) — an open-source Android app that replaces proprietary companion apps for smartwatches and fitness trackers. The entire Garmin BLE/GFDI protocol used here was reverse-engineered by the Gadgetbridge community. Their work on Garmin device support (Fenix 6 added in v0.88.0) is the foundation this project builds on.
+This project would not be possible without [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge) — an open-source Android app that replaces proprietary companion apps for smartwatches and fitness trackers. The entire Garmin BLE/GFDI protocol used here was reverse-engineered by the Gadgetbridge community.
 
 ## License
 
