@@ -74,10 +74,8 @@ class Transport:
         if not self._char_send or not self._char_recv:
             raise RuntimeError("No V2 multi-link characteristics found")
 
-        # Request higher MTU for better throughput (Garmin watches support 515)
         try:
-            if hasattr(self.client, "_acquire_mtu"):
-                await self.client._acquire_mtu()
+            await self.client._acquire_mtu()
         except Exception:
             pass
 
@@ -99,8 +97,11 @@ class Transport:
             log.error("Cannot send — GFDI handle not registered")
             return
 
-        async with self._send_lock:
-            await self._write(data)
+        try:
+            async with self._send_lock:
+                await self._write(data)
+        except Exception as error:
+            log.debug("Send failed (disconnected?): %s", error)
 
     async def _write(self, data: bytes):
         encoded = encoding.encode(data)
@@ -118,8 +119,11 @@ class Transport:
                 await self.client.write_gatt_char(self._char_send, packet, response=False)
                 position = end
 
+    def stop(self):
+        self._message_callback = None
+
     def _on_notify(self, _char, data):
-        if len(data) < 1:
+        if len(data) < 1 or self._message_callback is None:
             return
 
         handle = data[0] & 0xFF

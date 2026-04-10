@@ -40,6 +40,9 @@ class Protocol:
     def on(self, msg_type, handler):
         self._handlers[msg_type] = handler
 
+    def stop(self):
+        self._transport.stop()
+
     async def send(self, msg_type, payload=b""):
         await self._transport.send(build(msg_type, payload))
 
