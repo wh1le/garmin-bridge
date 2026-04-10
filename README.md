@@ -40,27 +40,15 @@ Put your watch in pairing mode first: **Settings → Sensors & Accessories → P
 
 ## Planned Commands
 
+1. Calendar events — push events, watch shows/alerts
+2. Weather — respond when watch asks
+3. Waypoints — upload locations for navigation
+
 ```bash
-garmin-bridge notify "Title" "Body"
+
 garmin-bridge alarm set 07:00 --label "Wake up"
 garmin-bridge alarm list
 garmin-bridge calendar sync --source ~/calendar.ics
-```
-
-## Project Structure
-
-```
-garmin-ble/
-├── flake.nix               # Nix dev shell
-├── pyproject.toml           # Poetry config
-├── Makefile                 # install, discover
-├── config.example.toml      # Config template
-├── garmin_bridge/
-│   ├── cli.py               # Click CLI
-│   └── ble/
-│       └── connection.py    # BLE scan + GATT discovery
-├── systemd/
-└── tests/
 ```
 
 ## License
