@@ -1,2 +1,7 @@
 watch:
   address: ""
+
+integrations:
+  openweather_api_key: ""
+
+calendar:
