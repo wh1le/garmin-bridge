@@ -13,9 +13,9 @@ interactions:
   response:
     body:
       string: '{"status": "success", "country": "Portugal", "countryCode": "PT", "region":
-        "15", "regionName": "Set\u00fabal", "city": "Almada", "zip": "FILTERED", "lat":
-        0.0, "lon": 0.0, "timezone": "Europe/Lisbon", "isp": "FILTERED", "org": "FILTERED",
-        "as": "FILTERED", "query": "FILTERED"}'
+        "FILTERED", "regionName": "FILTERED", "city": "FILTERED", "zip": "FILTERED",
+        "lat": 0.0, "lon": 0.0, "timezone": "Europe/Lisbon", "isp": "FILTERED", "org":
+        "FILTERED", "as": "FILTERED", "query": "FILTERED"}'
     headers:
       Access-Control-Allow-Origin:
       - '*'
@@ -24,7 +24,7 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Fri, 10 Apr 2026 16:55:13 GMT
+      - Fri, 10 Apr 2026 18:26:52 GMT
       X-Rl:
       - '44'
       X-Ttl:

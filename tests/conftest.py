@@ -9,13 +9,16 @@ CASSETTES_DIR = os.path.join(os.path.dirname(__file__), "cassettes")
 RECORD_MODE = "once" if os.environ.get("VCR_RECORD") else "none"
 
 SENSITIVE_LOCATION_FIELDS = {
-    "query": "FILTERED",
-    "isp":   "FILTERED",
-    "org":   "FILTERED",
-    "as":    "FILTERED",
-    "zip":   "FILTERED",
-    "lat":   0.0,
-    "lon":   0.0,
+    "query":      "FILTERED",
+    "isp":        "FILTERED",
+    "org":        "FILTERED",
+    "as":         "FILTERED",
+    "zip":        "FILTERED",
+    "city":       "FILTERED",
+    "region":     "FILTERED",
+    "regionName": "FILTERED",
+    "lat":        0.0,
+    "lon":        0.0,
 }
 
 
@@ -57,4 +60,9 @@ location_vcr = vcr.VCR(
     cassette_library_dir   = CASSETTES_DIR,
     record_mode            = "once",
     before_record_response = _scrub_location_response,
+)
+
+calendar_vcr = vcr.VCR(
+    cassette_library_dir = CASSETTES_DIR,
+    record_mode          = "once",
 )

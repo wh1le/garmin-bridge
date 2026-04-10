@@ -5,3 +5,6 @@ integrations:
   openweather_api_key: ""
 
 calendar:
+  urls:  # ICS URLs (Google Calendar, Nextcloud, Fastmail, etc)
+    # - https://calendar.google.com/calendar/ical/.../basic.ics
+    # - https://nextcloud.example.com/remote.php/dav/public-calendars/TOKEN?export

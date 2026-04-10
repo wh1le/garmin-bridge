@@ -72,7 +72,8 @@ def test_services():
 def test_weather(timeout):
     """Connect, start protocol, wait for weather request, respond, disconnect."""
     from src.protocol import Protocol, MessageType
-    from src.weather import handle_request
+    from src import weather, calendar
+    from src.protocol import handshake
 
     address = config.get("watch.address")
     if not address:
@@ -85,15 +86,24 @@ def test_weather(timeout):
             print(f"Connected: {client.is_connected}")
 
             protocol = Protocol(client)
+
             protocol.on(
                 MessageType.WEATHER_REQUEST,
-                lambda msg_type, payload: handle_request(protocol, msg_type, payload),
+                lambda msg_type, payload: weather.handle_request(protocol, msg_type, payload),
             )
+
+            def handle_protobuf(msg_type, payload):
+                if not calendar.handle_request(protocol, msg_type, payload):
+                    asyncio.ensure_future(
+                        protocol._transport.send(handshake.handle_protobuf_request(payload))
+                    )
+
+            protocol.on(MessageType.PROTOBUF_REQUEST, handle_protobuf)
 
             print("Starting protocol handshake...")
             await protocol.start()
 
-            print(f"Waiting for weather request ({timeout}s timeout)...")
+            print(f"Waiting for requests ({timeout}s timeout)...")
             await asyncio.sleep(timeout)
 
         print("Disconnected.")

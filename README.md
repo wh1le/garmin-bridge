@@ -7,14 +7,14 @@ Fenix 5+/6/7 series, Forerunner 245/745/945/955, Venu/Venu 2, Instinct 2, Enduro
 
 ## Status
 
-**Weather working.** Connects to watch, completes GFDI handshake, responds to weather requests with live data from OpenWeatherMap.
+**Weather and calendar working.** Connects to watch, completes GFDI handshake, responds to weather and calendar requests.
 
 - [x] BLE scanning, pairing, connect/disconnect
 - [x] GFDI protocol stack (COBS encoding, CRC, message framing, V2 transport)
 - [x] Connection handshake (device info, configuration, time sync)
-- [x] Weather — current, hourly (12h), daily (5 day)
+- [x] Weather — current, hourly (12h), daily (5 day) via OpenWeatherMap
+- [x] Calendar — sync events from any ICS URL (Google, Outlook, Nextcloud, etc)
 - [ ] Alarms
-- [ ] Calendar events
 - [ ] Daemon mode (long-running connection)
 
 ## Requirements
@@ -35,12 +35,19 @@ make install
 poetry install
 ```
 
-Add your OpenWeatherMap API key to `config.yaml`:
+Configure `config.yaml`:
 
 ```yaml
 integrations:
   openweather_api_key: your-key-here
+
+calendar:
+  urls:
+    - https://calendar.google.com/calendar/ical/.../basic.ics
+    - https://nextcloud.example.com/remote.php/dav/public-calendars/TOKEN?export
 ```
+
+Any ICS URL works — Google Calendar (use secret address from Settings), Outlook, Nextcloud, Fastmail, etc. Multiple calendars are merged into one.
 
 ## Usage
 

@@ -52,7 +52,6 @@ class Protocol:
         self._on_handshake(MessageType.AUTH_NEGOTIATION, handshake.handle_auth_negotiation)
         self._on_handshake(MessageType.CURRENT_TIME_REQUEST, handshake.handle_current_time_request)
         self._on_handshake(MessageType.NOTIFICATION_SUBSCRIPTION, handshake.handle_notification_subscription)
-        self._on_handshake(MessageType.PROTOBUF_REQUEST, handshake.handle_protobuf_request)
 
         self._handlers[MessageType.CONFIGURATION] = self._handle_configuration
         self._handlers[MessageType.RESPONSE] = self._handle_response
