@@ -6,7 +6,8 @@ from src.client_weather import WeatherClient
 
 class TestWeatherClient:
     @weather_vcr.use_cassette("openweather.yaml")
-    def test_fetch_returns_current_hourly_daily(self):
+    def test_fetch_returns_current_hourly_daily(self, mocker):
+        mocker.patch("src.client_weather.config.get", return_value="test-key")
         client = WeatherClient()
         current, hourly, daily = client.fetch(38.7167, -9.1333)
 

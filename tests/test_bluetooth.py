@@ -90,9 +90,29 @@ async def test_scan_completes_and_stops(mocker):
 
 # pair
 
+def mock_dbus(mocker):
+    """Mock D-Bus so pair tests work without BlueZ."""
+    mock_manager = AsyncMock()
+
+    mock_proxy = MagicMock()
+    mock_proxy.get_interface.return_value = mock_manager
+
+    mock_bus = MagicMock()
+    mock_bus.export = MagicMock()
+    mock_bus.introspect = AsyncMock(return_value=MagicMock())
+    mock_bus.get_proxy_object.return_value = mock_proxy
+
+    mock_bus_constructor = MagicMock()
+    mock_bus_constructor.connect = AsyncMock(return_value=mock_bus)
+
+    mocker.patch("src.bluetooth.MessageBus", return_value=mock_bus_constructor)
+    return mock_bus
+
+
 @pytest.mark.asyncio
 async def test_pair_saves_address(mocker):
     mock_client(mocker)
+    mock_dbus(mocker)
     config_set = mocker.patch("src.bluetooth.config.set")
 
     bt = Bluetooth()
@@ -104,6 +124,7 @@ async def test_pair_saves_address(mocker):
 @pytest.mark.asyncio
 async def test_pair_connects_and_pairs(mocker):
     client = mock_client(mocker)
+    mock_dbus(mocker)
     mocker.patch("src.bluetooth.config.set")
 
     bt = Bluetooth()
