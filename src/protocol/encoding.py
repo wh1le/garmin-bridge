@@ -1,17 +1,15 @@
 """COBS (Consistent Overhead Byte Stuffing) codec.
 
 Garmin variant: leading 0x00 + COBS-encoded payload + trailing 0x00.
-Ported from Gadgetbridge CobsCoDec.java.
 """
 
 
 def encode(data: bytes) -> bytes:
-    out = bytearray([0x00])  # Garmin leading padding
+    out = bytearray([0x00])  # Garmin leading zero
     i = 0
     n = len(data)
 
     while i < n:
-        # Find next zero byte
         start = i
         while i < n and data[i] != 0x00:
             i += 1
@@ -19,7 +17,6 @@ def encode(data: bytes) -> bytes:
         payload_size = i - start
         last_was_zero = i < n and data[i] == 0x00
 
-        # Emit chunks of up to 0xFE non-zero bytes
         while payload_size >= 0xFE:
             out.append(0xFF)
             out.extend(data[start : start + 0xFE])
@@ -30,9 +27,8 @@ def encode(data: bytes) -> bytes:
         out.extend(data[start : start + payload_size])
 
         if last_was_zero:
-            i += 1  # skip the zero byte
+            i += 1
 
-    # If the last byte of input was 0x00, emit a 0x01 marker
     if len(data) > 0 and data[-1] == 0x00:
         out.append(0x01)
 
@@ -66,9 +62,6 @@ def decode(data: bytes) -> bytes:
             out.append(buf[i])
             i += 1
 
-        # Append a zero byte after each group, except:
-        # - when code is 0xFF (max-length chunk, no implicit zero)
-        # - when we've consumed the entire buffer (no more groups)
         if code != 0xFF and i < len(buf):
             out.append(0x00)
 

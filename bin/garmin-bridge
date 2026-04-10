@@ -37,7 +37,6 @@ def test_cmd():
     """Test commands for debugging."""
 
 
-# keep the original 'test' command as 'test services'
 @test_cmd.command("services")
 def test_services():
     """Connect to paired device and dump services."""
@@ -69,7 +68,8 @@ def test_services():
 
 
 @test_cmd.command("weather")
-def test_weather():
+@click.option("--timeout", default=60, help="Seconds to wait for weather request")
+def test_weather(timeout):
     """Connect, start protocol, wait for weather request, respond, disconnect."""
     from src.protocol import Protocol, MessageType
     from src.weather import handle_request
@@ -85,13 +85,16 @@ def test_weather():
             print(f"Connected: {client.is_connected}")
 
             protocol = Protocol(client)
-            protocol.on(MessageType.WEATHER_REQUEST, lambda msg_type, payload: handle_request(protocol, msg_type, payload))
+            protocol.on(
+                MessageType.WEATHER_REQUEST,
+                lambda msg_type, payload: handle_request(protocol, msg_type, payload),
+            )
 
             print("Starting protocol handshake...")
             await protocol.start()
 
-            print("Waiting for weather request from watch (open weather widget)...")
-            await asyncio.sleep(60)
+            print(f"Waiting for weather request ({timeout}s timeout)...")
+            await asyncio.sleep(timeout)
 
         print("Disconnected.")
 

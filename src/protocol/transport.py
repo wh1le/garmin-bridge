@@ -14,7 +14,6 @@ from src.logger import log
 from src.protocol import encoding
 
 BASE_UUID = "6A4E%04X-667B-11E3-949A-0800200C9A66"
-SERVICE_UUID = BASE_UUID % 0x2800
 
 CLIENT_ID = 2
 
@@ -42,6 +41,8 @@ class Transport:
         self._message_callback = None
         self._cobs_buffer = bytearray()
         self._handle_event = asyncio.Event()
+        self._max_write_size = 20  # conservative default, updated after connect
+        self._send_lock = asyncio.Lock()
 
     async def init(self):
         services = self.client.services
@@ -73,10 +74,14 @@ class Transport:
         if not self._char_send or not self._char_recv:
             raise RuntimeError("No V2 multi-link characteristics found")
 
+        # Get negotiated MTU for write chunking
+        mtu = getattr(self.client, "mtu_size", 23)
+        self._max_write_size = max(mtu - 3, 20)
+        log.info("MTU=%d, max write=%d", mtu, self._max_write_size)
+
         await self.client.start_notify(self._char_recv, self._on_notify)
         await self._close_all_services()
-        # _close_all_services triggers CLOSE_ALL_RESP which triggers GFDI registration
-        # Wait for the GFDI handle to be assigned
+        # Close triggers CLOSE_ALL_RESP → GFDI registration → handle assigned
         await asyncio.wait_for(self._handle_event.wait(), timeout=10.0)
         log.info("GFDI registered on handle %d", self.gfdi_handle)
 
@@ -88,23 +93,24 @@ class Transport:
             log.error("Cannot send — GFDI handle not registered")
             return
 
-        encoded = encoding.encode(data)
-        payload = bytes([self.gfdi_handle]) + encoded
-        # Fragment if needed (MTU is typically 20 for BLE 4.x)
-        mtu = getattr(self.client, "mtu_size", 20) - 3
-        chunk_size = max(mtu - 1, 19)  # -1 for handle byte in first chunk
+        async with self._send_lock:
+            await self._write(data)
 
-        if len(payload) <= chunk_size + 1:
-            await self.client.write_gatt_char(self._char_send, payload, response=False)
+    async def _write(self, data: bytes):
+        encoded = encoding.encode(data)
+        # Each chunk: 1 byte handle + up to (max_write_size - 1) bytes of data
+        data_per_chunk = self._max_write_size - 1
+
+        if len(encoded) <= data_per_chunk:
+            packet = bytes([self.gfdi_handle]) + encoded
+            await self.client.write_gatt_char(self._char_send, packet, response=False)
         else:
-            pos = 0
-            while pos < len(encoded):
-                end = min(pos + chunk_size, len(encoded))
-                chunk = bytes([self.gfdi_handle]) + encoded[pos:end]
-                await self.client.write_gatt_char(
-                    self._char_send, chunk, response=False
-                )
-                pos = end
+            position = 0
+            while position < len(encoded):
+                end = min(position + data_per_chunk, len(encoded))
+                packet = bytes([self.gfdi_handle]) + encoded[position:end]
+                await self.client.write_gatt_char(self._char_send, packet, response=False)
+                position = end
 
     def _on_notify(self, _char, data):
         if len(data) < 1:

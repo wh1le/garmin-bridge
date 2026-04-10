@@ -13,8 +13,6 @@ from src.logger import log
 from src.protocol import MessageType, serializer
 
 
-# --- Garmin weather constants ---
-
 WEATHER_MSG = 128
 WIND_SPEED_SCALE = 298
 
@@ -48,8 +46,6 @@ class Report:
     HOURLY  = 1
     DAILY   = 2
 
-
-# --- Public ---
 
 def handle_request(protocol, _msg_type, payload):
     """Handle WEATHER_REQUEST (5014) from watch."""
@@ -87,9 +83,6 @@ def handle_request(protocol, _msg_type, payload):
     asyncio.ensure_future(_respond())
 
 
-# --- Private ---
-
-# OWM condition ID → Garmin Condition code
 _OWM_TO_GARMIN_DICTIONARY = {
     200: Condition.THUNDERSTORMS,
     201: Condition.THUNDERSTORMS,
