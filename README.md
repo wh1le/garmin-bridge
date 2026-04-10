@@ -1,4 +1,4 @@
-# garmin-bridge
+# Garmin Bridge
 
 Replace Garmin Connect Mobile on Linux — push weather, alarms, and calendar events to a Garmin watch via BLE. No smartphone required.
 
