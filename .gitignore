@@ -2,12 +2,11 @@ result
 .direnv
 pdoc/
 __pycache__/
-*.pyc
-*.pyo
 *.egg-info/
 dist/
 config.toml
 config.yaml
+*.pyc
+*.pyo
 .venv/
 venv/
-.DS_Store
