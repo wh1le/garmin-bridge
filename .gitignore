@@ -1,36 +1,13 @@
-# Project
 result
-config.toml
-config.yaml
-
-# Secrets
-.env
-.env.*
-*.pem
-*.key
-credentials.json
-
-# Python
+.direnv
+pdoc/
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
 dist/
-build/
+config.toml
+config.yaml
 .venv/
 venv/
-.coverage
-htmlcov/
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
-
-# Nix
-.direnv
-
-# Docs
-pdoc/
-
-# OS
 .DS_Store
-Thumbs.db
