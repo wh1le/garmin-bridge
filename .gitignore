@@ -1,8 +1,36 @@
+# Project
 result
-.direnv
-pdoc/
-__pycache__/
-*.egg-info/
-dist/
 config.toml
 config.yaml
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Nix
+.direnv
+
+# Docs
+pdoc/
+
+# OS
+.DS_Store
+Thumbs.db
