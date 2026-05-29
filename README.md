@@ -104,4 +104,4 @@ This project would not be possible without [Gadgetbridge](https://codeberg.org/F
 
 ## License
 
-MIT
+AGPL-3.0 — see [LICENSE](LICENSE). This project ports protocol code from [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge), which is licensed under AGPL-3.0.
