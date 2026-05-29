@@ -3,6 +3,7 @@ name = "garmin-bridge"
 version = "0.1.0"
 description = "Push notifications, alarms, and calendar events from Linux to Garmin watches via BLE"
 authors = ["wh1le"]
+license = "AGPL-3.0-only"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
