@@ -1,6 +1,6 @@
 # Garmin Bridge
 
-> Currently on pause here, because I am no longer using garmin watches. But with this implementation you can do a lot, contributions are welcome.
+> Currently paused, because I am no longer using garmin watches. But with this implementation you can do a lot, contributions are welcome.
 
 Replace Garmin Connect Mobile on Linux — weather, calendar, and todos on your Garmin watch via BLE. No smartphone required.
 
